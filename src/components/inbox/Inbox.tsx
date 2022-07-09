@@ -1,5 +1,13 @@
 import { SyntheticEvent, useCallback, useEffect, useState } from 'react';
-import { Icon16BookmarkOutline, Icon16Bookmark, Icon20MailOutline, Icon16New } from '@vkontakte/icons';
+import {
+  Icon16BookmarkOutline,
+  Icon16Bookmark,
+  Icon16New,
+  Icon20Attach,
+  Icon20PictureOutline,
+  Icon20DocumentOutline,
+  Icon20TableHeaderOutline
+} from '@vkontakte/icons';
 import {
   withAdaptivity,
   usePlatform,
@@ -11,14 +19,13 @@ import {
   Panel,
   Cell,
   Avatar,
-  Caption,
   List,
   Text,
   ViewWidth,
   Checkbox,
   Button
 } from '@vkontakte/vkui';
-import { TextTooltip } from '@vkontakte/vkui/dist/unstable';
+import { TextTooltip, RichTooltip } from '@vkontakte/vkui/dist/unstable';
 
 import { mailsApi } from '../../store/services/mails';
 
@@ -26,15 +33,17 @@ import inboxStyles from './inbox.module.css';
 import { useAppDispatch, useAppSelector } from '../../hooks/use-store';
 import { setMails, updateMail, updateMails } from '../../store/reducers/mailsSlice';
 import AdditionalIcons from '../additional-icons/additionalIcons';
+import Menu from '../menu/menu';
 
 const Inbox = withAdaptivity(
   ({ viewWidth }) => {
-    const { data, isLoading, isSuccess } = mailsApi.useFetchMailsQuery('');
     const [patchMail] = mailsApi.usePatchMailMutation();
     const [patchMails] = mailsApi.usePatchMailsMutation();
     const [activeMail, setActiveMail] = useState(-1);
     const [hoveredMail, setHoveredMail] = useState(-1);
     const [selectedMail, setSelectedMail] = useState<number[]>([]);
+    const [activeCategory, setActiveCategory] = useState('all');
+    const { data, isLoading, isFetching, isSuccess, refetch } = mailsApi.useFetchMailsQuery(activeCategory);
     const platform = usePlatform();
     const dispatch = useAppDispatch();
     const mails = useAppSelector((state) => state.mails);
@@ -48,12 +57,15 @@ const Inbox = withAdaptivity(
       }
     }, [data, dispatch]);
 
-    const handleIncomingClick = useCallback(() => {
-      // if (!isDesktop) {
-      //   setActiveCol([0]);
-      //   setActiveMail(-1);
-      // }
-    }, []);
+    const getMails = useCallback(
+      async (category = 'all') => {
+        setSelectedMail([]);
+        setActiveMail(-1);
+        setActiveCategory(category);
+        await refetch;
+      },
+      [refetch]
+    );
 
     const handleSelectedAll = () => {
       if (selectedMail.length === mails.mails.length) {
@@ -119,7 +131,7 @@ const Inbox = withAdaptivity(
       });
     };
 
-    if (isLoading) {
+    if (isLoading || isFetching) {
       return <div>Загрузка</div>;
     }
 
@@ -130,24 +142,7 @@ const Inbox = withAdaptivity(
           header={hasHeader && <PanelHeader separator={false} />}
         >
           <SplitCol fixed width={isDesktop ? 170 : 50} maxWidth={isDesktop ? 170 : 50} spaced>
-            <Panel>
-              <PanelHeader separator={false} />
-              <Group mode="plain" className={inboxStyles.group}>
-                <List>
-                  <Cell
-                    expandable
-                    before={<Icon20MailOutline />}
-                    style={{
-                      backgroundColor: 'var(--button_secondary_background)',
-                      borderRadius: 8
-                    }}
-                    onClick={handleIncomingClick}
-                  >
-                    <Caption level="1">Входящие</Caption>
-                  </Cell>
-                </List>
-              </Group>
-            </Panel>
+            <Menu activeCategory={activeCategory} getMails={getMails} />
           </SplitCol>
 
           <SplitCol spaced>
@@ -198,9 +193,7 @@ const Inbox = withAdaptivity(
                               onClick={(e) => handleCheckboxCellClick(e, mailIndex)}
                             />
                           ) : (
-                            <TextTooltip text={mail.author.email}>
-                              <Avatar size={28} src={mail.author.avatar} />
-                            </TextTooltip>
+                            <Avatar size={28} src={mail.author.avatar} />
                           )}
                         </>
                       }
@@ -218,9 +211,11 @@ const Inbox = withAdaptivity(
                       onClick={() => setActiveMail(mailIndex)}
                     >
                       <div className={inboxStyles.container}>
-                        <Text weight={mail.read ? '3' : '1'} className={inboxStyles.author}>
-                          {mail.author.name}
-                        </Text>
+                        <TextTooltip text={mail.author.email}>
+                          <Text weight={mail.read ? '3' : '1'} className={inboxStyles.author}>
+                            {mail.author.name}
+                          </Text>
+                        </TextTooltip>
                         <TextTooltip text={mail.flag ? 'Снять флаг' : 'Отметить флагом'}>
                           <div
                             className={`${inboxStyles.flag} ${mail.flag ? `${inboxStyles.selected}` : ''}`}
@@ -237,6 +232,48 @@ const Inbox = withAdaptivity(
                             {mail.text.slice(0, 100)}
                           </Text>
                         </div>
+                        {mail.attach && mail.attach.length > 0 && (
+                          <RichTooltip
+                            arrow={false}
+                            placement="left"
+                            content={
+                              <List>
+                                {mail.attach.map((content) => (
+                                  <RichTooltip
+                                    arrow={false}
+                                    placement="left"
+                                    content={
+                                      content.type === 'image' ? (
+                                        <img className={inboxStyles.img} src={content.src} alt={content.name} />
+                                      ) : (
+                                        <span />
+                                      )
+                                    }
+                                  >
+                                    <Cell
+                                      expandable
+                                      before={
+                                        content.type === 'image' ? (
+                                          <Icon20PictureOutline />
+                                        ) : content.type === 'doc' ? (
+                                          <Icon20DocumentOutline />
+                                        ) : content.type === 'xlsx' ? (
+                                          <Icon20TableHeaderOutline />
+                                        ) : (
+                                          <Icon20Attach />
+                                        )
+                                      }
+                                    >
+                                      {content.name}
+                                    </Cell>
+                                  </RichTooltip>
+                                ))}
+                              </List>
+                            }
+                          >
+                            <Icon20Attach />
+                          </RichTooltip>
+                        )}
                         <Text weight="3" className={inboxStyles.time}>
                           {mail.dateTime}
                         </Text>

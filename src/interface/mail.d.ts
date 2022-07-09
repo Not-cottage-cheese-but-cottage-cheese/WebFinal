@@ -11,6 +11,7 @@ export namespace mail {
     confidence: boolean;
     finance: boolean;
     read: boolean;
+    attach?: Attach[];
   }
 
   export interface Author {
@@ -19,5 +20,9 @@ export namespace mail {
     readonly email: string;
   }
 
-  export type ShortMail = Omit<mail.Mail, 'newThread' | 'important' | 'flag' | 'confidence' | 'finance' | 'read'>;
+  export interface Attach {
+    readonly name: string;
+    readonly src: string;
+    readonly type: string;
+  }
 }
