@@ -1,5 +1,5 @@
-import { View, Panel } from "@vkontakte/vkui";
-import Inbox from "../inbox/Inbox";
+import { View, Panel } from '@vkontakte/vkui';
+import Inbox from '../inbox/Inbox';
 
 const App = () => {
   return (

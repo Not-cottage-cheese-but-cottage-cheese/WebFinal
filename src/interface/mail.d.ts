@@ -1,5 +1,6 @@
 export namespace mail {
   export interface Mail {
+    readonly _id: string;
     readonly author: readonly Author;
     readonly dateTime: string;
     readonly text: string;
@@ -18,8 +19,5 @@ export namespace mail {
     readonly email: string;
   }
 
-  export type ShortMail = Omit<
-    mail.Mail,
-    "newThread" | "important" | "flag" | "confidence" | "finance" | "read"
-  >;
+  export type ShortMail = Omit<mail.Mail, 'newThread' | 'important' | 'flag' | 'confidence' | 'finance' | 'read'>;
 }
