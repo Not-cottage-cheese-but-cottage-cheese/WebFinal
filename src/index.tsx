@@ -1,15 +1,15 @@
-import ReactDOM from "react-dom/client";
-import { Provider } from "react-redux";
-import { AdaptivityProvider, ConfigProvider, AppRoot } from "@vkontakte/vkui";
-import "@vkontakte/vkui/dist/vkui.css";
+import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { AdaptivityProvider, ConfigProvider, AppRoot } from '@vkontakte/vkui';
+import '@vkontakte/vkui/dist/vkui.css';
+import './assets/styles/main.css';
+import '@vkontakte/vkui/dist/unstable.css';
 
-import App from "./components/app/App";
-import { store } from "./store";
-import reportWebVitals from "./reportWebVitals";
+import App from './components/app/App';
+import { store } from './store';
+import reportWebVitals from './reportWebVitals';
 
-const root = ReactDOM.createRoot(
-  document.getElementById("root") as HTMLElement
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(
   <Provider store={store}>

@@ -1,0 +1,28 @@
+.additional-icon {
+  margin-left: 10px;
+  width: 78px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.additional-icon--important {
+  color: var(--dynamic_red);
+}
+
+.additional-icon--finance {
+  color: var(--dynamic_green);
+}
+
+.additional-icon--confidence {
+  color: var(--dynamic_orange);
+  transform: scaleX(-1) rotate(90deg);
+}
+
+.additional-icon--new {
+  background-color: var(--icon_secondary_alpha);
+  border-radius: 8px;
+  padding: 2px;
+  margin: 0 2px;
+  font-size: 12px;
+}
