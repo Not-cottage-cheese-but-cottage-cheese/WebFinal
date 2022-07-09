@@ -1,0 +1,26 @@
+.cell {
+  margin-bottom: 10px;
+}
+
+.cell:last-child {
+  margin-bottom: 0;
+}
+
+.top {
+  padding: 5px 0 5px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.bottom {
+  padding: 5px 0 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+.overflow {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
