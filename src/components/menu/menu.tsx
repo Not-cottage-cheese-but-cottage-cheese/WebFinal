@@ -1,15 +1,25 @@
+import { Dispatch, SetStateAction } from 'react';
 import {
   Icon20MailOutline,
   Icon20BookmarkOutline,
   Icon20ExclamationMarkOutline,
   Icon20RoubleOutline,
-  Icon20KeyOutline
+  Icon20KeyOutline,
+  Icon20FilterOutline
 } from '@vkontakte/icons';
 import { Panel, PanelHeader, Group, List, Cell, Caption } from '@vkontakte/vkui';
 
 import styles from './menu.module.css';
 
-const Menu = ({ activeCategory, getMails }: { activeCategory: string; getMails: (category: string) => void }) => {
+const Menu = ({
+  activeCategory,
+  getMails,
+  setModal
+}: {
+  activeCategory: string;
+  getMails: (category: string) => void;
+  setModal: Dispatch<SetStateAction<string>>;
+}) => {
   return (
     <Panel>
       <PanelHeader separator={false} />
@@ -94,6 +104,14 @@ const Menu = ({ activeCategory, getMails }: { activeCategory: string; getMails: 
             onClick={() => getMails('confidence')}
           >
             <Caption level="1">Доверенный</Caption>
+          </Cell>
+          <Cell
+            className={styles.cell}
+            expandable
+            before={<Icon20FilterOutline />}
+            onClick={() => setModal('settings')}
+          >
+            <Caption level="1">Настройки</Caption>
           </Cell>
         </List>
       </Group>
