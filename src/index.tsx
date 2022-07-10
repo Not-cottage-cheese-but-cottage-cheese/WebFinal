@@ -1,6 +1,5 @@
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
-import { AdaptivityProvider, ConfigProvider, AppRoot } from '@vkontakte/vkui';
 import '@vkontakte/vkui/dist/vkui.css';
 import './assets/styles/main.css';
 import '@vkontakte/vkui/dist/unstable.css';
@@ -13,13 +12,7 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 
 root.render(
   <Provider store={store}>
-    <ConfigProvider>
-      <AdaptivityProvider>
-        <AppRoot>
-          <App />
-        </AppRoot>
-      </AdaptivityProvider>
-    </ConfigProvider>
+    <App />
   </Provider>
 );
 

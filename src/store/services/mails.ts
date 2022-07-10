@@ -4,7 +4,7 @@ import { mail } from '../../interface/mail';
 export const mailsApi = createApi({
   reducerPath: 'mailsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000'
+    baseUrl: process.env.API || 'http://localhost:3000'
   }),
   endpoints: (build) => ({
     fetchMails: build.query<mail.Mail[], string>({
