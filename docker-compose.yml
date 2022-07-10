@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3005:3005
+    environment:
+      - API=http://localhost:3000
