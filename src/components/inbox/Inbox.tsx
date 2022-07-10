@@ -1,4 +1,4 @@
-import { SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Icon16BookmarkOutline,
   Icon16Bookmark,
@@ -51,21 +51,49 @@ const Inbox = withAdaptivity(
     const [hoveredMail, setHoveredMail] = useState(-1);
     const [selectedMail, setSelectedMail] = useState<number[]>([]);
     const [activeCategory, setActiveCategory] = useState('all');
+    const [prevCategory, setPrevCategory] = useState('all');
     const [popout, setPopout] = useState<any>(null);
     const [modal, setModal] = useState('');
-    const { data, isLoading, isFetching, refetch } = mailsApi.useFetchMailsQuery(activeCategory);
+    const [offset, setOffset] = useState(0);
+    const [prevOffset, setPrevOffset] = useState(0);
+    const [scrollTop, setScrollTop] = useState(0);
+    const { data, isLoading, isFetching, refetch } = mailsApi.useFetchMailsQuery({
+      category: activeCategory,
+      offset: offset,
+      limit: 20
+    });
     const platform = usePlatform();
     const dispatch = useAppDispatch();
     const mails = useAppSelector((state) => state.mails);
+    const scrollRef = useRef<any>(null);
 
     const hasHeader = platform !== VKCOM;
     const isDesktop = (viewWidth || 0) >= ViewWidth.TABLET;
 
     useEffect(() => {
       if (data) {
-        dispatch(setMails(data));
+        if (scrollRef?.current) {
+          if (!isLoading && !isFetching) {
+            if (prevCategory !== activeCategory) {
+              scrollRef.current.scrollTop = 0;
+            } else if (offset > prevOffset) {
+              scrollRef.current.scrollTop = scrollTop;
+            } else {
+              scrollRef.current.scrollTop = scrollRef.current.clientHeight + scrollTop;
+            }
+          }
+        }
+        dispatch(setMails({ mails: data, insert: offset > prevOffset, clear: prevCategory !== activeCategory }));
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data, dispatch]);
+
+    useEffect(() => {
+      if (offset > prevOffset && offset === 1) {
+        setScrollTop(scrollRef.current.scrollTop);
+      }
+      refetch();
+    }, [offset, prevOffset, refetch]);
 
     useEffect(() => {
       if (isLoading || isFetching) {
@@ -75,15 +103,36 @@ const Inbox = withAdaptivity(
       }
     }, [isLoading, isFetching]);
 
-    const getMails = useCallback(
-      async (category = 'all') => {
-        setSelectedMail([]);
-        setActiveMail(-1);
-        setActiveCategory(category);
-        await refetch;
-      },
-      [refetch]
-    );
+    useEffect(() => {
+      if (scrollRef?.current) {
+        scrollRef.current.addEventListener('scroll', async () => {
+          setPrevCategory(activeCategory);
+          if (scrollRef?.current) {
+            if (scrollRef.current.scrollTop + scrollRef.current.clientHeight >= scrollRef.current.scrollHeight) {
+              if (mails.mails.length === 40 || offset === 0) {
+                setPrevOffset(offset);
+                setOffset(offset + 1);
+              }
+            }
+            if (scrollRef.current.scrollTop === 0) {
+              setPrevOffset(offset);
+              setOffset(offset === 0 ? 0 : offset - 1);
+            }
+          }
+        });
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mails.mails.length, offset, scrollRef]);
+
+    const getMails = useCallback(async (category = 'all') => {
+      setSelectedMail([]);
+      setActiveMail(-1);
+      setOffset(0);
+      setPrevOffset(0);
+      setPrevCategory(activeCategory);
+      setActiveCategory(category);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSelectedAll = () => {
       if (selectedMail.length === mails.mails.length) {
@@ -207,123 +256,124 @@ const Inbox = withAdaptivity(
                 </div>
               </PanelHeader>
             )}
-            <Group
-              className={inboxStyles.group}
-              mode="plain"
-              style={{
-                overflow: 'scroll',
-                height: 'calc(100vh - var(--panelheader_height) - var(--formitem_padding))'
-              }}
-            >
-              <List>
-                {mails?.mails?.map((mail, mailIndex) => (
-                  <Cell
-                    key={mailIndex}
-                    disabled={mailIndex === activeMail}
-                    className={inboxStyles.cell}
-                    onEnter={() => setHoveredMail(mailIndex)}
-                    onLeave={() => setHoveredMail(-1)}
-                    before={
-                      <>
-                        <TextTooltip text={mail.read ? 'Пометить непрочитаным' : 'Пометить прочитаным'}>
-                          <Icon16New className={inboxStyles.new} onClick={(e) => handleReadClick(e, mailIndex)} />
+            <Group className={inboxStyles.group} mode="plain">
+              <div
+                ref={scrollRef}
+                style={{
+                  overflow: 'scroll',
+                  height: 'calc(100vh - var(--panelheader_height) - var(--formitem_padding))'
+                }}
+              >
+                <List>
+                  {mails?.mails?.map((mail, mailIndex) => (
+                    <Cell
+                      key={mailIndex}
+                      disabled={mailIndex === activeMail}
+                      className={inboxStyles.cell}
+                      onEnter={() => setHoveredMail(mailIndex)}
+                      onLeave={() => setHoveredMail(-1)}
+                      before={
+                        <>
+                          <TextTooltip text={mail.read ? 'Пометить непрочитаным' : 'Пометить прочитаным'}>
+                            <Icon16New className={inboxStyles.new} onClick={(e) => handleReadClick(e, mailIndex)} />
+                          </TextTooltip>
+                          {mailIndex === hoveredMail ? (
+                            <Checkbox
+                              checked={selectedMail.includes(mailIndex)}
+                              onClick={(e) => handleCheckboxCellClick(e, mailIndex)}
+                            />
+                          ) : (
+                            <Avatar size={28} src={mail.author.avatar} />
+                          )}
+                        </>
+                      }
+                      style={
+                        selectedMail.includes(mailIndex)
+                          ? {
+                              backgroundColor: 'var(--button_secondary_background)',
+                              borderRadius: 8
+                            }
+                          : {
+                              backgroundColor: 'var(--background_content)',
+                              borderRadius: 8
+                            }
+                      }
+                      onClick={() => setActiveMail(mailIndex)}
+                    >
+                      <div className={inboxStyles.container}>
+                        <TextTooltip text={mail.author.email}>
+                          <Text weight={mail.read ? '3' : '1'} className={inboxStyles.author}>
+                            {mail.author.name}
+                          </Text>
                         </TextTooltip>
-                        {mailIndex === hoveredMail ? (
-                          <Checkbox
-                            checked={selectedMail.includes(mailIndex)}
-                            onClick={(e) => handleCheckboxCellClick(e, mailIndex)}
-                          />
-                        ) : (
-                          <Avatar size={28} src={mail.author.avatar} />
-                        )}
-                      </>
-                    }
-                    style={
-                      selectedMail.includes(mailIndex)
-                        ? {
-                            backgroundColor: 'var(--button_secondary_background)',
-                            borderRadius: 8
-                          }
-                        : {
-                            backgroundColor: 'var(--background_content)',
-                            borderRadius: 8
-                          }
-                    }
-                    onClick={() => setActiveMail(mailIndex)}
-                  >
-                    <div className={inboxStyles.container}>
-                      <TextTooltip text={mail.author.email}>
-                        <Text weight={mail.read ? '3' : '1'} className={inboxStyles.author}>
-                          {mail.author.name}
-                        </Text>
-                      </TextTooltip>
-                      <TextTooltip text={mail.flag ? 'Снять флаг' : 'Отметить флагом'}>
-                        <div
-                          className={`${inboxStyles.flag} ${mail.flag ? `${inboxStyles.selected}` : ''}`}
-                          onClick={(e) => handleBookmarkClick(e, mailIndex)}
-                        >
-                          {mail.flag ? <Icon16Bookmark /> : <Icon16BookmarkOutline />}
+                        <TextTooltip text={mail.flag ? 'Снять флаг' : 'Отметить флагом'}>
+                          <div
+                            className={`${inboxStyles.flag} ${mail.flag ? `${inboxStyles.selected}` : ''}`}
+                            onClick={(e) => handleBookmarkClick(e, mailIndex)}
+                          >
+                            {mail.flag ? <Icon16Bookmark /> : <Icon16BookmarkOutline />}
+                          </div>
+                        </TextTooltip>
+                        <div className={inboxStyles.title}>
+                          <Text weight={mail.read ? '3' : '1'} className={inboxStyles['title--text']}>
+                            {mail.title}
+                          </Text>
+                          <Text weight="3" className={inboxStyles['title--content']}>
+                            {mail.text.slice(0, 100)}
+                          </Text>
                         </div>
-                      </TextTooltip>
-                      <div className={inboxStyles.title}>
-                        <Text weight={mail.read ? '3' : '1'} className={inboxStyles['title--text']}>
-                          {mail.title}
-                        </Text>
-                        <Text weight="3" className={inboxStyles['title--content']}>
-                          {mail.text.slice(0, 100)}
-                        </Text>
-                      </div>
-                      {mail.attach && mail.attach.length > 0 && (
-                        <RichTooltip
-                          arrow={false}
-                          placement="left"
-                          content={
-                            <List>
-                              {mail.attach.map((content, key) => (
-                                <RichTooltip
-                                  arrow={false}
-                                  placement="left"
-                                  key={key}
-                                  content={
-                                    content.type === 'image' ? (
-                                      <img className={inboxStyles.img} src={content.src} alt={content.name} />
-                                    ) : (
-                                      <span />
-                                    )
-                                  }
-                                >
-                                  <Cell
-                                    expandable
-                                    before={
+                        {mail.attach && mail.attach.length > 0 && (
+                          <RichTooltip
+                            arrow={false}
+                            placement="left"
+                            content={
+                              <List>
+                                {mail.attach.map((content, key) => (
+                                  <RichTooltip
+                                    arrow={false}
+                                    placement="left"
+                                    key={key}
+                                    content={
                                       content.type === 'image' ? (
-                                        <Icon20PictureOutline />
-                                      ) : content.type === 'doc' ? (
-                                        <Icon20DocumentOutline />
-                                      ) : content.type === 'xlsx' ? (
-                                        <Icon20TableHeaderOutline />
+                                        <img className={inboxStyles.img} src={content.src} alt={content.name} />
                                       ) : (
-                                        <Icon20Attach />
+                                        <span />
                                       )
                                     }
                                   >
-                                    {content.name}
-                                  </Cell>
-                                </RichTooltip>
-                              ))}
-                            </List>
-                          }
-                        >
-                          <Icon20Attach />
-                        </RichTooltip>
-                      )}
-                      <Text weight="3" className={inboxStyles.time}>
-                        {mail.dateTime}
-                      </Text>
-                      <AdditionalIcons mail={mail} />
-                    </div>
-                  </Cell>
-                ))}
-              </List>
+                                    <Cell
+                                      expandable
+                                      before={
+                                        content.type === 'image' ? (
+                                          <Icon20PictureOutline />
+                                        ) : content.type === 'doc' ? (
+                                          <Icon20DocumentOutline />
+                                        ) : content.type === 'xlsx' ? (
+                                          <Icon20TableHeaderOutline />
+                                        ) : (
+                                          <Icon20Attach />
+                                        )
+                                      }
+                                    >
+                                      {content.name}
+                                    </Cell>
+                                  </RichTooltip>
+                                ))}
+                              </List>
+                            }
+                          >
+                            <Icon20Attach />
+                          </RichTooltip>
+                        )}
+                        <Text weight="3" className={inboxStyles.time}>
+                          {mail.dateTime}
+                        </Text>
+                        <AdditionalIcons mail={mail} />
+                      </div>
+                    </Cell>
+                  ))}
+                </List>
+              </div>
             </Group>
           </Panel>
         </SplitCol>

@@ -9,8 +9,20 @@ export const mailsSlice = createSlice({
   name: 'base',
   initialState,
   reducers: {
-    setMails(state, action: PayloadAction<mail.Mail[]>) {
-      state.mails = action.payload;
+    setMails(state, action: PayloadAction<{ mails: mail.Mail[]; insert: boolean; clear: boolean }>) {
+      if (action.payload.clear) {
+        state.mails = action.payload.mails;
+      } else if (state.mails.length === 0) {
+        state.mails = action.payload.mails;
+      } else if (state.mails.length === 20) {
+        state.mails = action.payload.insert
+          ? [...state.mails, ...action.payload.mails]
+          : [...action.payload.mails, ...state.mails];
+      } else if (state.mails.length === 40) {
+        state.mails = action.payload.insert
+          ? [...state.mails.slice(20, 40), ...action.payload.mails]
+          : [...action.payload.mails, ...state.mails.slice(20, 40)];
+      }
     },
     updateMail(state, action: PayloadAction<{ index: number; data: Partial<mail.Mail> }>) {
       state.mails[action.payload.index] = {

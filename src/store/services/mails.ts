@@ -7,8 +7,14 @@ export const mailsApi = createApi({
     baseUrl: process.env.API || 'http://localhost:3000'
   }),
   endpoints: (build) => ({
-    fetchMails: build.query<mail.Mail[], string>({
-      query: (category) => `mails/incoming/${category}`,
+    fetchMails: build.query<mail.Mail[], { category: string; offset: number; limit: number }>({
+      query: ({ category, offset, limit }) => {
+        return {
+          url: `mails/incoming/${category}`,
+          method: 'GET',
+          params: { offset, limit }
+        };
+      },
       transformResponse: (response: { isSuccess: boolean; data: mail.Mail[]; message?: string }) => response.data
     }),
     patchMail: build.mutation<{ isSuccess: boolean; message?: string }, { id: string; body: Partial<mail.Mail> }>({
