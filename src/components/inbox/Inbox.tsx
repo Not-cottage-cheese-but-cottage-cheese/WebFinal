@@ -216,17 +216,20 @@ const Inbox = withAdaptivity(
                 style={{
                   backgroundImage:
                     'url(https://img.imgsmail.ru/pkgs/themes.outsource/1.15.0/t2068/images/bg/vk_all/1440x900.jpg)',
-                    backgroundSize: 'cover'
+                  backgroundSize: 'cover'
                 }}
                 onClick={() => dispatch(setTheme(NotDefaultTheme.DOG))}
               >
                 <div style={{ height: 96, color: 'white' }}>Собачья тема</div>
               </Card>
-              <Card style={{
+              <Card
+                style={{
                   backgroundImage:
                     'url(https://s1.hostingkartinok.com/uploads/images/2022/07/9fa633d1ac363e876b5740f9c331c6ed.png)',
-                    backgroundSize: 'cover'
-                }} onClick={() => dispatch(setTheme(NotDefaultTheme.CAT))}>
+                  backgroundSize: 'cover'
+                }}
+                onClick={() => dispatch(setTheme(NotDefaultTheme.CAT))}
+              >
                 <div style={{ height: 96, color: 'black' }}>Кошачья тема</div>
               </Card>
             </CardGrid>

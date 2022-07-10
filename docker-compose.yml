@@ -6,6 +6,6 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 3005:3005
+      - 3005:80
     environment:
       - API=http://localhost:3000
